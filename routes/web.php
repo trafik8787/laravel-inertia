@@ -1,23 +1,17 @@
 <?php
 
+use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 //Route::get('/', function () {
 //    return view('welcome');
 //});
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'name' => 'Vitaliy',
-        'framework' => 'Laravel + Inertia + Vue 3',
-    ]);
+
+
+Route::controller(TestController::class)->group(function () {
+   Route::get('/', 'index')->name('test');
+   Route::get('/contract', 'contract')->name('contract');
+   Route::get('/about', 'about')->name('about');
 });
-
-Route::get('/about', function () {
-    return Inertia::render('About', [
-        'info' => 'Это страница About',
-    ]);
-});
-
-
 
