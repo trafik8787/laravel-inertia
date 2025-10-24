@@ -1,5 +1,5 @@
 name: Laravel
-on: 
+on:
   workflow_dispatch:
 jobs:
   test:
@@ -9,10 +9,18 @@ jobs:
         uses: actions/checkout@v5
         with:
           submodules: recursive
+
       - name: Copy env files
         run: |
           cp .env.example .env
           cp .env.laradock laradock/.env
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: docker-${{ github.sha }}
+
       - name: Start Docker containers
         run: docker compose -f laradock/docker-compose.yml up -d mysql php-fpm nginx
 
@@ -24,7 +32,7 @@ jobs:
         run: docker compose -f laradock/docker-compose.yml exec -T workspace composer install --no-interaction --prefer-dist
 
       - name: Generate Laravel APP_KEY
-        run: docker compose -f laradock/docker-compose.yml exec -T workspace artisan key:generate --force
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace php artisan key:generate --force
 
       - name: Stop Docker containers
         if: always()
