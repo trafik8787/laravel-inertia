@@ -1,0 +1,31 @@
+name: Laravel
+on: 
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - name: Copy env files
+        run: |
+          cp .env.example .env
+          cp .env.laradock laradock/.env
+      - name: Start Docker containers
+        run: docker compose -f laradock/docker-compose.yml up -d mysql php-fpm nginx
+
+      - name: Wait for MySQL
+        run: |
+          sleep 15
+          docker compose -f laradock/docker-compose.yml exec -T mysql mysqladmin ping -h localhost -uroot -p123123
+      - name: Install composer dependencies
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace composer install --no-interaction --prefer-dist
+
+      - name: Generate Laravel APP_KEY
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace artisan key:generate --force
+
+      - name: Stop Docker containers
+        if: always()
+        run: docker compose -f laradock/docker-compose.yml down
