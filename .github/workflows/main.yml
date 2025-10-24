@@ -27,7 +27,7 @@ jobs:
           key: docker-${{ github.sha }}
 
       - name: Start Docker containers
-        run: docker compose -f laradock/docker-compose.yml up -d mysql
+        run: docker compose -f laradock/docker-compose.yml up -d workspace mysql
 
       - name: Wait for MySQL
         run: |
