@@ -1,6 +1,11 @@
 name: Laravel
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - '.github/workflows/**'
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -22,17 +27,27 @@ jobs:
           key: docker-${{ github.sha }}
 
       - name: Start Docker containers
-        run: docker compose -f laradock/docker-compose.yml up -d mysql php-fpm nginx
+        run: docker compose -f laradock/docker-compose.yml up -d mysql
 
       - name: Wait for MySQL
         run: |
           sleep 15
           docker compose -f laradock/docker-compose.yml exec -T mysql mysqladmin ping -h localhost -uroot -p123123
+
       - name: Install composer dependencies
         run: docker compose -f laradock/docker-compose.yml exec -T workspace composer install --no-interaction --prefer-dist
 
       - name: Generate Laravel APP_KEY
         run: docker compose -f laradock/docker-compose.yml exec -T workspace php artisan key:generate --force
+
+      - name: Install npm dependencies
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace npm install
+
+      - name: Run build script (npn run build)
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace npm run build
+
+      - name: Run Laravel tests
+        run: docker compose -f laradock/docker-compose.yml exec -T workspace php artisan test --parallel --stop-on-failure
 
       - name: Stop Docker containers
         if: always()
