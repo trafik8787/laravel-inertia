@@ -52,3 +52,44 @@ jobs:
       - name: Stop Docker containers
         if: always()
         run: docker compose -f laradock/docker-compose.yml down
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() && github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            echo "🚀 Starting deployment on production server..."
+            cd /home/ubuntu/www
+
+            echo "→ Pulling latest changes"
+
+            git fetch origin master
+            git reset --hard origin/master
+
+            cd /home/ubuntu/www/laradock
+
+            echo "→ Installing composer dependencies"
+            docker compose -f --user=laradock exec workspace composer install --no-interaction --prefer-dist --optimize-autoloader
+
+            echo "→ Running database migrations"
+            docker compose -f --user=laradock exec workspace php artisan migrate --force
+
+            echo "→ Clearing and caching configs"
+            docker compose -f --user=laradock exec workspace php artisan config:clear
+            docker compose -f --user=laradock exec workspace php artisan config:cache
+            docker compose -f --user=laradock exec workspace php artisan route:cache
+
+            echo "→ Installing npm packages and rebuilding assets"
+            docker compose -f --user=laradock exec workspace npm install
+            docker compose -f --user=laradock exec workspace npm run build
+
+            echo "✅ Deployment completed successfully!"
