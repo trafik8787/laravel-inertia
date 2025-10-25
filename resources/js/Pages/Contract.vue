@@ -4,7 +4,7 @@ import Layout from "../Layouts/AppLayout.vue"
 
 <template>
     <Layout>
-        <h1>Contract</h1>
+        <h1>Contract-</h1>
     </Layout>
 
 </template>
